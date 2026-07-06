@@ -13,11 +13,12 @@
 | 项 | 内容 |
 |---|---|
 | 产品名 | TrandeAgent |
-| 版本 | v1.0（MVP） |
-| 文档版本 | v1.0 |
+| 版本 | v1.1（含 Mac 前端扩展） |
+| 文档版本 | v1.1 |
 | 作者 | 小瑶（方案设计智能体） |
 | 创建日期 | 2026-07-06 |
 | 状态 | 待用户确认 |
+| 变更 | v1.0 → v1.1：新增 F10/F11（v0.3 需求） |
 | 关联文档 | [context.md](./context.md) · [research.md](./research.md) · [adr.md](./adr.md) |
 
 ---
@@ -89,6 +90,8 @@
 | F7 | **飞书多维表格** | 基金池/信号/策略竞技场数据存储 |
 | F8 | **YAML 策略配置** | 规则版本管理 |
 | F9 | **定时调度** | macOS launchd + 交易日过滤 |
+| **F10** | **Mac 端前端（Next.js）** | **v0.3 新增**。策略池总览/周期分析/单基金深度解读/各领域推荐/完整管理台，浏览器访问 localhost |
+| **F11** | **本地后端 API（FastAPI）** | **v0.3 新增**。统一查询入口，直接 import 业务模块，Pydantic → OpenAPI → 前端类型安全 |
 
 ### 5.2 Should-Have（MVP 后续）
 
@@ -335,6 +338,57 @@ arena:
 - ✅ 节假日不发
 - ✅ 关机后开机自动补发漏推送
 
+### F10：Mac 端前端（Next.js Web 应用）— v0.3 新增
+
+**输入：** FastAPI 后端（F11）提供的 REST API
+**处理：**
+1. 5 个核心页面（对应 US-7~10）：
+   - **策略池总览**：8 领域 × Top-5 策略 + 全部策略列表
+   - **策略详情 / 周期分析**：多周期收益柱状图 + 净值曲线（含回撤+基准）+ 现金流时序图
+   - **单基金深度解读**：经理画像时间轴 + 持仓行业雷达 + 业绩归因对比表 + 风险仪表盘 + 现金流瀑布 + LLM 报告
+   - **发现 / 各领域推荐**：8 领域 × Top-5 基金 + 时间窗切换
+   - **管理台**：YAML 规则表单化编辑 + 观察池管理 + 策略采用/停用 + 手动触发 + 配置版本回滚
+2. 现代 SaaS 风视觉（类 Notion/Linear）
+3. 浏览器访问 `http://localhost:3000`
+**输出：** 完整可交互的 Web 管理台
+
+**验收：**
+- ✅ 5 个页面全部实现，对应 US-7~10 验收点
+- ✅ 图表渲染 ≤ 1s（5 年日频数据）
+- ✅ 操作（加观察池/采用策略/保存配置）即时生效
+- ✅ 前后端类型一致（openapi-typescript 自动生成）
+- ✅ 一键脚本启动（双击 .command）
+
+### F11：本地后端 API（FastAPI）— v0.3 新增
+
+**输入：** 业务模块（src.data/src.indicators/src.screener/src.analyzer/src.signal/src.arena）
+**处理：**
+1. FastAPI 应用直接 import 业务模块，不重复实现逻辑
+2. Pydantic 定义所有响应 schema
+3. 自动生成 OpenAPI 文档（`/docs`）
+4. 提供 RESTful API：
+   - `GET /api/funds` 基金列表（含筛选）
+   - `GET /api/funds/{code}` 单基金详情（含 L1-L4 指标）
+   - `GET /api/funds/{code}/report` 单基金 LLM 报告
+   - `POST /api/funds/{code}/analyze` 触发 AI 重新分析
+   - `GET /api/strategies` 策略列表（含领域分组+排名）
+   - `GET /api/strategies/{id}` 策略详情 + 周期分析数据
+   - `POST /api/strategies/{id}/adopt` 采用策略
+   - `GET /api/discover?domain=&window=` 发现页推荐
+   - `GET /api/observation` 观察池
+   - `POST /api/observation/{code}` 加入观察池
+   - `GET/POST/PUT /api/config` 配置管理
+   - `POST /api/jobs/{type}` 手动触发任务（拉数据/回测/分析）
+5. CORS 允许 localhost:3000
+**输出：** OpenAPI JSON + REST API
+
+**验收：**
+- ✅ 所有 API 返回 Pydantic 校验过的响应
+- ✅ `/docs` 可交互文档可用
+- ✅ 单基金分析 API ≤ 30s 返回
+- ✅ 策略列表 API ≤ 2s 返回（含 100 策略 × 8 领域）
+- ✅ CORS 配置正确（前端可调）
+
 ---
 
 ## 7. 非功能需求（NFRs）
@@ -456,6 +510,8 @@ arena:
 | P1 | F4 择时信号引擎 | F1, F6, F7 |
 | P2 | F5 策略模拟竞技场 | F1, F4, F7 |
 | P2 | F8 YAML 策略配置 | F2, F4 |
+| P3 | **F11 本地后端 API** | F1-F8 |
+| P3 | **F10 Mac 端前端** | F11 |
 
 ### 10.2 Roadmap
 
