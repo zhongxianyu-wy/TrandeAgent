@@ -63,6 +63,19 @@
 - Base 写入串行，批次间 0.5s
 - 错误码识别（1254104 超限、91403 无权限、1254064 日期格式错）
 
+### FR-7：lark-cli 二进制安装与版本管理（v0.2 新增 — Step 6 验证后补充）
+- **首次运行必须检测 `which lark-cli`**，未安装则提示 `npm install -g @larksuite/cli`
+- 提供 `feishu install-cli` 命令一键安装
+- 检测 `_notice.update` 字段，提示用户运行 `npm update -g @larksuite/cli && npx skills add larksuite/cli -g -y`
+- 配套要求：launchd plist 的 PATH 必须含 npm global bin 路径
+
+### FR-8：安全规则（v0.2 新增 — Step 6 源码阅读后补充）
+- **日志/异常中禁止输出 appSecret、accessToken 明文**，必须脱敏（`***` 替换）
+- 删除/批量更新操作必须经用户确认（处理 lark-cli exit code 10 高风险门禁）
+- exit 10 处理协议：解析 stderr envelope → 抛 `ConfirmationRequired` → 等待用户显式同意 → argv 末尾追加 `--yes` 重试
+- **绝对禁止**看到 exit 10 自动加 `--yes`（等于禁用门禁，违反 SKILL.md 原文）
+- `config init --new` 必须用 background 模式（阻塞式等待用户授权）
+
 ---
 
 ## 5. 非功能需求（NFR）

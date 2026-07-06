@@ -1,6 +1,6 @@
 # Feature #2 — feishu-io 任务清单
 
-> 任务总数：**13 条**
+> 任务总数：**14 条**（v0.2 新增 T00/T13b）
 
 ---
 
@@ -8,11 +8,14 @@
 
 | # | 任务 | 依赖 | 难度 |
 |---|---|---|---|
-| T01 | 依赖检查 + lark-cli PATH 诊断脚本 | - | 容易 |
+| **T00** | **lark-cli 二进制检测与安装脚本（v0.2 新增）** | - | 容易 |
+| T01 | 依赖检查 + lark-cli PATH 诊断脚本（扩展 T00） | T00 | 容易 |
 | T02 | FeishuClient 抽象接口定义 | - | 容易 |
 | T03 | Pydantic 卡片/记录 schema | T02 | 容易 |
 | T04 | 实现 LarkCLIClient.subprocess 封装 | T02 | 中等 |
 | T05 | 实现重试 + 错误码识别 | T04 | 中等 |
+| **T05b** | **实现 exit 10 高风险门禁处理（v0.2 新增）** | T05 | 中等 |
+| **T05c** | **实现日志脱敏（appSecret/accessToken 不外泄）** | T04 | 容易 |
 | T06 | 实现 health_check（PATH/token/Base 存在） | T04 | 容易 |
 | T07 | Base schema YAML 设计（4 张表字段） | - | 中等 |
 | T08 | 实现 init_base（创建 Base + 表 + 字段） | T04,T07 | 困难 |
