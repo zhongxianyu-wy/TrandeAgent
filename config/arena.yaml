@@ -1,0 +1,73 @@
+# 策略竞技场总配置（T04 差异维度矩阵 + 全局参数）
+# 详见 specs/008-strategy-arena/spec.md §FR-1/FR-2/FR-3/FR-4
+
+# ---- T04 差异维度矩阵：5 维 2048 组合（8*4*4*4*4）----
+dimension_matrix:
+  domains:                # 投资域（8）
+    - 价值
+    - 成长
+    - 红利
+    - 趋势
+    - 逆向
+    - 全球配置
+    - 指数增强
+    - 低波
+  timing_logic:           # 择时逻辑（4）
+    - 技术面
+    - 基本面
+    - 技术+基本
+    - 无择时
+  rebalance_freq:         # 调仓频率（4）
+    - 周
+    - 双周
+    - 月
+    - 季
+  risk_threshold:         # 风控阈值（4）
+    - 0.05
+    - 0.10
+    - 0.15
+    - 0.20
+  concentration:          # 持仓集中度（4）
+    - Top5
+    - Top10
+    - Top20
+    - Top50
+
+# ---- T06 策略生成 ----
+generation:
+  default_count: 100      # 默认生成数量（spec: 50-200）
+  min_count: 50
+  max_count: 200
+  dedup_threshold: 0.1    # 参数空间 cosine 距离 < 0.1 视为重复
+  llm_system_hint: |
+    你是策略生成助手。必须严格基于给定的原型与差异维度矩阵生成参数变体，
+    禁止发明新的原型或大师心智模型。每个策略需选择 prototype_id（必须来自给定列表）、
+    可选 mind_model_id（必须来自给定列表或为 null）、domain（必须来自 8 领域），
+    以及 params（必须在原型参数空间内）和 5 个差异维度轴值。
+    返回 JSON：{"strategies": [ {strategy_id, prototype_id, mind_model_id, domain,
+    params, timing_logic, rebalance_freq, risk_threshold, concentration,
+    source_explanation}, ... ]}
+
+# ---- T10/T11/T12 回测 ----
+backtest:
+  fast_years: 5           # 快速扫描历史年数
+  precise_years: 5
+  annualization: 252      # 年化交易日
+  fast_commission_bps: 0.0   # 快速扫描不计手续费
+  fast_slippage_bps: 0.0
+  precise_commission_bps: 15.0  # 精细回测手续费 0.15%
+  precise_slippage_bps: 5.0     # 精细回测滑点 0.05%
+  top_n_precise: 20       # Top-20 触发精细回测
+
+# ---- T13/T14/T15 纸上模拟 ----
+forward:
+  qualified_days: 30      # 满 30 个交易日才能进 Top-5
+  cross_check_threshold: 0.2  # 回测年化 vs 纸上收益差异 > 20% 标记可疑
+
+# ---- T16 领域排名 ----
+ranking:
+  weights:                # composite_score 权重
+    return: 0.5
+    sharpe: 0.3
+    drawdown: 0.2
+  top_per_domain: 5       # 每领域 Top-5

@@ -1,0 +1,153 @@
+# 策略竞技场 - 15 个策略原型定义（T02）
+# 详见 specs/008-strategy-arena/plan.md §2
+#
+# 每个原型必须可被 Python 类实现（src/arena/strategies/）。
+# class_name 指向 StrategyBase 子类，用于回测时生成持仓信号。
+# params_template 列出该原型的合法参数空间（LLM 只能在该空间内变体）。
+
+prototypes:
+  - id: proto_4433
+    name: "4433法则"
+    source: "邱显比教授（基金多周期排名筛选法）"
+    core_logic: "近1/2/3/5年排名前1/4 + 近3/6月排名前1/3；单基金代理：多周期滚动收益均为正才持有"
+    class_name: "Strategy4433"
+    domain: ["价值", "成长", "红利", "指数增强"]
+    params_template:
+      short_window: 63      # 近3月（交易日）
+      mid_window: 126       # 近6月
+      long_window: 252      # 近12月
+
+  - id: proto_dual_momentum
+    name: "双动量"
+    source: "Gary Antonacci《Dual Momentum Investing》"
+    core_logic: "绝对动量（12月收益>0）+ 相对动量（短期上行），双满足才持有"
+    class_name: "StrategyDualMomentum"
+    domain: ["趋势", "全球配置"]
+    params_template:
+      lookback_months: 12   # 绝对动量回看月数
+      abs_window: 252       # 绝对动量窗口（交易日）
+      rel_window: 63        # 相对动量窗口
+
+  - id: proto_grid
+    name: "网格交易"
+    source: "区间网格低买高卖"
+    core_logic: "价格处于近期区间下半区（便宜）时持有，上半区（昂贵）时空仓"
+    class_name: "StrategyGrid"
+    domain: ["趋势", "逆向", "低波"]
+    params_template:
+      window: 60            # 网格回看窗口
+
+  - id: proto_dca
+    name: "定投策略"
+    source: "定期定额（Dollar-Cost Averaging）"
+    core_logic: "忽略择时，始终满仓持有（定额累积）"
+    class_name: "StrategyDCA"
+    domain: ["价值", "成长", "红利", "指数增强", "低波"]
+    params_template: {}
+
+  - id: proto_ma_cross
+    name: "均线择时"
+    source: "MA 金叉/死叉"
+    core_logic: "短期均线上穿长期均线（金叉）持有，下穿（死叉）空仓"
+    class_name: "StrategyMACross"
+    domain: ["趋势", "指数增强"]
+    params_template:
+      fast: 20
+      slow: 60
+
+  - id: proto_macd
+    name: "MACD趋势"
+    source: "DIF/DEA 交叉"
+    core_logic: "DIF > DEA 持有，反之空仓"
+    class_name: "StrategyMACD"
+    domain: ["趋势", "指数增强"]
+    params_template:
+      fast: 12
+      slow: 26
+      signal: 9
+
+  - id: proto_rsi_reversal
+    name: "RSI反转"
+    source: "超买超卖反转"
+    core_logic: "RSI 跌破超卖线买入，突破超买线卖出"
+    class_name: "StrategyRSIReversal"
+    domain: ["逆向", "低波"]
+    params_template:
+      period: 14
+      oversold: 30
+      overbought: 70
+
+  - id: proto_bollinger_breakout
+    name: "布林带突破"
+    source: "Bollinger Band 突破"
+    core_logic: "突破上轨跟随趋势持有，跌破下轨空仓"
+    class_name: "StrategyBollingerBreakout"
+    domain: ["趋势", "成长"]
+    params_template:
+      window: 20
+      k: 2.0
+
+  - id: proto_drawdown_recovery
+    name: "最大回撤修复"
+    source: "回撤超过阈值后加码风控"
+    core_logic: "回撤未超阈值时持有，回撤击穿阈值时空仓避险"
+    class_name: "StrategyDrawdownRecovery"
+    domain: ["低波", "红利", "价值"]
+    params_template:
+      threshold: 0.15       # 回撤阈值
+
+  - id: proto_pe_dca
+    name: "估值定投"
+    source: "PE 百分位估值定投"
+    core_logic: "净值（代理估值）历史分位偏低时持有，偏高（昂贵）时空仓"
+    class_name: "StrategyPEDCA"
+    domain: ["价值", "红利", "指数增强"]
+    params_template:
+      window: 252
+      high_pct: 0.8         # 高估分位
+      low_pct: 0.3          # 低估分位
+
+  - id: proto_momentum_rotation
+    name: "动量轮动"
+    source: "近期强者恒强"
+    core_logic: "近期滚动收益为正（强势）时持有"
+    class_name: "StrategyMomentumRotation"
+    domain: ["趋势", "成长", "全球配置"]
+    params_template:
+      window: 60
+
+  - id: proto_low_vol
+    name: "低波动"
+    source: "低波持有（长期配置）"
+    core_logic: "选择低波动特征长期持有（始终满仓）"
+    class_name: "StrategyLowVol"
+    domain: ["低波", "红利"]
+    params_template: {}
+
+  - id: proto_turtle
+    name: "趋势跟踪"
+    source: "海龟交易法简化版（N日突破）"
+    core_logic: "突破 N 日新高入场持有，跌破 exit 日新低空仓"
+    class_name: "StrategyTurtle"
+    domain: ["趋势", "全球配置"]
+    params_template:
+      breakout_days: 20
+      exit_days: 10
+
+  - id: proto_mean_reversion
+    name: "均值回归"
+    source: "偏离均线后回归"
+    core_logic: "跌破布林下轨（低估）买入持有，突破上轨（高估）空仓"
+    class_name: "StrategyMeanReversion"
+    domain: ["逆向", "价值", "低波"]
+    params_template:
+      window: 30
+      threshold: 1.0
+
+  - id: proto_risk_parity
+    name: "风险平价（简化）"
+    source: "按波动率倒数分配（简化为长期持有）"
+    core_logic: "按反波动率持有（单基金代理：始终满仓）"
+    class_name: "StrategyRiskParity"
+    domain: ["全球配置", "低波", "指数增强"]
+    params_template: {}
