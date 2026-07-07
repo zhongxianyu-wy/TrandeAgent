@@ -32,7 +32,7 @@ fi
 echo "→ 安装 launchd agent：${LABEL}"
 # 通过 CLI 生成 plist 并加载（复用 LaunchdScheduler.install，保证字段一致）
 cd "${PROJECT_ROOT}"
-python -m src.scheduler install
+uv run python -m src.scheduler install
 
 echo "→ 验证：launchctl list | grep ${LABEL}"
 if launchctl list | grep -q "${LABEL}"; then
