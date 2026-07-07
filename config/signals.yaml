@@ -1,0 +1,94 @@
+# Feature #7 信号规则配置（择时信号引擎）
+#
+# 字段说明：
+#   name      规则中文名（用于理由展示）
+#   category  信号大类：technical | fundamental | fund_specific
+#   indicator 指标标识：ma_cross | macd | rsi | bollinger | pe_percentile | drawdown | intraday_alert
+#   operator  比较算子：cross_above | cross_below | above | below | between
+#   threshold 触发阈值（语义随 indicator 不同，见各规则注释；MA/MACD 不使用，填 0）
+#   weight    权重（synthesizer 加权合成用）
+#
+# 技术约束：所有技术指标纯 pandas 实现，不用 pandas-ta。
+# 大跌阈值 -3% 全基金类型统一（用户可在此修改）。
+
+rules:
+  # ---------- 技术面（FR-1） ----------
+  - name: "均线金叉"
+    category: "technical"
+    indicator: "ma_cross"
+    operator: "cross_above"
+    threshold: 0
+    weight: 1.0
+  - name: "均线死叉"
+    category: "technical"
+    indicator: "ma_cross"
+    operator: "cross_below"
+    threshold: 0
+    weight: 1.0
+  - name: "MACD金叉"
+    category: "technical"
+    indicator: "macd"
+    operator: "cross_above"
+    threshold: 0
+    weight: 1.0
+  - name: "MACD死叉"
+    category: "technical"
+    indicator: "macd"
+    operator: "cross_below"
+    threshold: 0
+    weight: 1.0
+  - name: "RSI超卖"
+    category: "technical"
+    indicator: "rsi"
+    operator: "below"
+    threshold: 30
+    weight: 0.8
+  - name: "RSI超买"
+    category: "technical"
+    indicator: "rsi"
+    operator: "above"
+    threshold: 70
+    weight: 0.8
+  - name: "布林下轨突破"
+    category: "technical"
+    indicator: "bollinger"
+    operator: "below"
+    threshold: 2.0
+    weight: 0.8
+  - name: "布林上轨突破"
+    category: "technical"
+    indicator: "bollinger"
+    operator: "above"
+    threshold: 2.0
+    weight: 0.8
+
+  # ---------- 基本面（FR-2） ----------
+  - name: "PE历史低估"
+    category: "fundamental"
+    indicator: "pe_percentile"
+    operator: "below"
+    threshold: 20
+    weight: 1.0
+  - name: "PE历史高估"
+    category: "fundamental"
+    indicator: "pe_percentile"
+    operator: "above"
+    threshold: 80
+    weight: 1.0
+  - name: "回撤补仓"
+    category: "fundamental"
+    indicator: "drawdown"
+    operator: "below"
+    threshold: -10.0
+    weight: 1.2
+
+  # ---------- 基金专属（FR-3） ----------
+  - name: "大跌警报"
+    category: "fund_specific"
+    indicator: "intraday_alert"
+    operator: "below"
+    threshold: -3.0
+    weight: 2.0
+
+# 大跌阈值（全基金类型统一，用户可改）——用于 detect_intraday_alert
+intraday_alert_threshold: -3.0

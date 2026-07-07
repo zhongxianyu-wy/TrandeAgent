@@ -1,0 +1,98 @@
+# 基金筛选规则配置（Feature #5 fund-screener）
+# 详见 specs/005-fund-screener/plan.md
+#
+# 规则字段路径支持两种写法：
+#   - 嵌套："l2_performance.sharpe"（对应 FundIndicators）
+#   - 扁平："sharpe"（对应 calc_batch 返回的列名）
+# 支持操作符：>=  <=  between  in  percentile_top
+
+# 默认筛选配置（python -m src.screener run 不指定 --rules 时使用）
+rules:
+  - name: return_1y_top33
+    field: l2_performance.return_1y
+    op: percentile_top
+    value: 0.33
+  - name: return_3y_top33
+    field: l2_performance.return_3y
+    op: percentile_top
+    value: 0.33
+  - name: return_5y_top25
+    field: l2_performance.return_5y
+    op: percentile_top
+    value: 0.25
+  - name: sharpe_top25
+    field: l2_performance.sharpe
+    op: percentile_top
+    value: 0.25
+  - name: scale_2_to_50
+    field: l1_basic.scale
+    op: between
+    value: [2.0, 50.0]
+
+weights:
+  return_1y_top33: 1.0
+  return_3y_top33: 1.0
+  return_5y_top25: 1.5
+  sharpe_top25: 1.5
+  scale_2_to_50: 0.5
+
+top_n: 20
+
+# 命名预设集合（python -m src.screener run --preset rule_4433）
+presets:
+  # 4433 法则：多周期业绩同类排名前 1/3~1/4 + 风险调整收益
+  rule_4433:
+    rules:
+      - name: return_1y_top33
+        field: l2_performance.return_1y
+        op: percentile_top
+        value: 0.33
+      - name: return_3y_top33
+        field: l2_performance.return_3y
+        op: percentile_top
+        value: 0.33
+      - name: return_5y_top25
+        field: l2_performance.return_5y
+        op: percentile_top
+        value: 0.25
+      - name: sharpe_top25
+        field: l2_performance.sharpe
+        op: percentile_top
+        value: 0.25
+      - name: scale_2_to_50
+        field: l1_basic.scale
+        op: between
+        value: [2.0, 50.0]
+    weights:
+      return_1y_top33: 1.0
+      return_3y_top33: 1.0
+      return_5y_top25: 1.5
+      sharpe_top25: 1.5
+      scale_2_to_50: 0.5
+    top_n: 20
+
+  # 聪明钱/高质量：机构青睐 + 经理稳定 + 回撤可控
+  quality:
+    rules:
+      - name: institution_holding_ge30
+        field: l1_basic.institution_holding_pct
+        op: ">="
+        value: 0.30
+      - name: manager_tenure_ge2
+        field: l1_basic.manager_tenure_years
+        op: ">="
+        value: 2.0
+      - name: max_drawdown_ge_neg25
+        field: l2_performance.max_drawdown
+        op: ">="
+        value: -0.25
+      - name: sharpe_ge05
+        field: l2_performance.sharpe
+        op: ">="
+        value: 0.5
+    weights:
+      institution_holding_ge30: 1.5
+      manager_tenure_ge2: 1.0
+      max_drawdown_ge_neg25: 1.0
+      sharpe_ge05: 1.5
+    top_n: 20

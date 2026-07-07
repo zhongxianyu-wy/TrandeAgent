@@ -18,6 +18,10 @@ dependencies = [
     "chinese-calendar>=1.9",
     # Feature #4 indicators（纯 numpy/pandas 实现风险指标，避免 empyrical 兼容问题）
     "numpy>=1.26",
+    # Feature #6 fund-analyzer
+    "jinja2>=3.0",
+    "openai>=1.0",
+    "tiktoken>=0.5",
 ]
 
 [project.optional-dependencies]
@@ -48,7 +52,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["src/data", "src/indicators", "src/feishu", "src/scheduler"]
+source = ["src/data", "src/indicators", "src/feishu", "src/scheduler", "src/screener", "src/analyzer", "src/signal"]
 omit = ["*/__main__.py", "*/tests/*"]
 
 [tool.coverage.report]
