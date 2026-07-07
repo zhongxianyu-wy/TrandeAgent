@@ -1,0 +1,55 @@
+# 基金池表 schema（spec §8 / plan §2.1）
+table_name: "基金池"
+fields:
+  - name: "基金代码"
+    type: "text"
+    primary_key: true
+    description: "基金代码，主键，去重依据"
+  - name: "基金名称"
+    type: "text"
+  - name: "类型"
+    type: "single_select"
+    property:
+      options:
+        - { name: "qdii" }
+        - { name: "index" }
+        - { name: "etf_link" }
+        - { name: "active_stock" }
+  - name: "评级"
+    type: "number"
+    property:
+      formatter: "0"
+  - name: "最新净值"
+    type: "number"
+    property:
+      formatter: "0.0000"
+  - name: "近1月涨跌幅"
+    type: "number"
+    property:
+      formatter: "0.00%"
+  - name: "规模"
+    type: "number"
+    property:
+      formatter: "0.00"
+    description: "基金规模（亿）"
+  - name: "夏普"
+    type: "number"
+    property:
+      formatter: "0.00"
+  - name: "最大回撤"
+    type: "number"
+    property:
+      formatter: "0.00%"
+  - name: "观察原因"
+    type: "text"
+  - name: "是否观察"
+    type: "checkbox"
+  - name: "添加日期"
+    type: "date"
+views:
+  - name: "今日候选"
+    filter: { "添加日期": "today" }
+    sort: { "评级": "desc" }
+  - name: "观察池"
+    filter: { "是否观察": true }
+    sort: { "近1月涨跌幅": "desc" }

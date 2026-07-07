@@ -1,0 +1,24 @@
+# 调度层配置（Feature #3 scheduler）
+# 详见 specs/003-scheduler/plan.md
+
+# 每日触发时间（HH:MM，本地时区）
+trigger_time: "16:00"
+
+# 触发时区（A 股盘后）
+timezone: "Asia/Shanghai"
+
+# 漏推送补发上限（交易日数，plan §6 决策）
+backfill_max_days: 5
+
+# 节假日数据源（chinese_calendar 已覆盖中国法定节假日与调休）
+holidays_source: "chinese_calendar"
+
+# 状态文件目录（last_run.json / run_history.jsonl）
+state_dir: "data/state"
+
+# launchd Label
+label: "com.trandeagent.daily"
+
+# 业务流水线入口（spec FR-1：python -m src.main daily）
+program_module: "src.main"
+program_command: "daily"

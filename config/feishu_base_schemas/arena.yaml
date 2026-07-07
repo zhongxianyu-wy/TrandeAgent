@@ -1,0 +1,36 @@
+# 策略竞技场表 schema
+table_name: "策略竞技场"
+fields:
+  - name: "策略名称"
+    type: "text"
+    primary_key: true
+  - name: "领域"
+    type: "single_select"
+    property:
+      options:
+        - { name: "指数增强" }
+        - { name: "主动权益" }
+        - { name: "QDII" }
+        - { name: "债券" }
+  - name: "周期收益"
+    type: "number"
+    property:
+      formatter: "0.00%"
+  - name: "最大回撤"
+    type: "number"
+    property:
+      formatter: "0.00%"
+  - name: "夏普"
+    type: "number"
+    property:
+      formatter: "0.00"
+  - name: "排名"
+    type: "number"
+    property:
+      formatter: "0"
+  - name: "更新日期"
+    type: "date"
+views:
+  - name: "竞技场 Top-5"
+    filter: {}
+    sort: { "排名": "asc" }

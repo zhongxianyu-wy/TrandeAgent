@@ -1,0 +1,16 @@
+# 复盘表 schema
+table_name: "复盘"
+fields:
+  - name: "日期"
+    type: "date"
+    primary_key: true
+  - name: "复盘内容"
+    type: "text"
+  - name: "操作记录"
+    type: "text"
+  - name: "教训"
+    type: "text"
+views:
+  - name: "近期复盘"
+    filter: {}
+    sort: { "日期": "desc" }

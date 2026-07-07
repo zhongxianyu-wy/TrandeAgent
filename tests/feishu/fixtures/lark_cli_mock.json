@@ -1,0 +1,41 @@
+{
+  "_comment": "lark-cli mock 响应样例（测试用，不依赖真实二进制）",
+  "base_create": {
+    "code": 0,
+    "data": {
+      "app_token": "bascnXXXXXXXXXXXXXXXXXX",
+      "url": "https://feishu.cn/base/bascnXXXXXXXXXXXXXXXXXX"
+    }
+  },
+  "table_create": {
+    "code": 0,
+    "data": { "table_id": "tblXXXXXXXXXXXX" }
+  },
+  "messages_send": {
+    "code": 0,
+    "data": { "message_id": "om_XXXXXXXXXXXXXXXX" }
+  },
+  "batch_create": {
+    "code": 0,
+    "data": { "record_ids": ["recXXXX1", "recXXXX2"] }
+  },
+  "error_batch_limit": {
+    "code": 1254104,
+    "msg": "record batch size exceeds limit"
+  },
+  "error_permission": {
+    "code": 91403,
+    "msg": "permission denied"
+  },
+  "error_date_format": {
+    "code": 1254064,
+    "msg": "invalid date format"
+  },
+  "gate_confirmation_required": {
+    "ok": false,
+    "error": {
+      "type": "confirmation_required",
+      "risk": { "level": "high-risk-write" }
+    }
+  }
+}

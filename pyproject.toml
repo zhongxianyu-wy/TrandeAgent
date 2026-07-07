@@ -12,6 +12,12 @@ dependencies = [
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
     "pyyaml>=6.0",
+    # Feature #2 feishu-io
+    "shellingham>=1.5",
+    # Feature #3 scheduler
+    "chinese-calendar>=1.9",
+    # Feature #4 indicators（纯 numpy/pandas 实现风险指标，避免 empyrical 兼容问题）
+    "numpy>=1.26",
 ]
 
 [project.optional-dependencies]
@@ -42,7 +48,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["src/data"]
+source = ["src/data", "src/indicators", "src/feishu", "src/scheduler"]
 omit = ["*/__main__.py", "*/tests/*"]
 
 [tool.coverage.report]

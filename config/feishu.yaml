@@ -1,0 +1,40 @@
+# 飞书 IO 层配置（Feature #2 feishu-io）
+# 详见 specs/002-feishu-io/plan.md
+#
+# appId/appSecret 通过环境变量注入，不写明文：
+#   export FEISHU_APP_ID=cli_xxx
+#   export FEISHU_APP_SECRET=xxx
+
+app_id: ${FEISHU_APP_ID}
+app_secret: ${FEISHU_APP_SECRET}
+user_open_id: "ou_xxxxxxxxxxxxxxxx"
+# 首次 init 后自动填充
+base_token: ""
+base_url: ""
+
+tables:
+  - name: "基金池"
+    table_id: ""
+    fields_file: "config/feishu_base_schemas/fund_pool.yaml"
+  - name: "信号"
+    table_id: ""
+    fields_file: "config/feishu_base_schemas/signals.yaml"
+  - name: "策略竞技场"
+    table_id: ""
+    fields_file: "config/feishu_base_schemas/arena.yaml"
+  - name: "复盘"
+    table_id: ""
+    fields_file: "config/feishu_base_schemas/review.yaml"
+
+rate_limit:
+  # 单聊推送 QPS 上限（实际每日仅 1 条）
+  msg_qps: 5
+  # Base 批量写入单批上限（飞书 API 限制 200）
+  base_batch_size: 200
+  # 批次间延迟（秒），避免触发流控
+  base_batch_interval_sec: 0.5
+
+retry:
+  max_attempts: 3
+  # 指数退避基数（秒）：1, 2, 4
+  backoff_base: 1.0
