@@ -22,6 +22,10 @@ dependencies = [
     "jinja2>=3.0",
     "openai>=1.0",
     "tiktoken>=0.5",
+    # Feature #11 api-backend
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
@@ -29,6 +33,7 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=4.0",
     "pytest-mock>=3.0",
+    "httpx>=0.27",
 ]
 
 [project.scripts]
@@ -52,7 +57,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["src/data", "src/indicators", "src/feishu", "src/scheduler", "src/screener", "src/analyzer", "src/signal"]
+source = ["src/data", "src/indicators", "src/feishu", "src/scheduler", "src/screener", "src/analyzer", "src/signal", "src/arena", "src/config_manager", "src/api"]
 omit = ["*/__main__.py", "*/tests/*"]
 
 [tool.coverage.report]
