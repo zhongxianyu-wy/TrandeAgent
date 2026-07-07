@@ -172,6 +172,9 @@ export const handlers = [
   http.post("*/api/strategies/:id/disable", ({ params }) =>
     ok({ strategy_id: params.id, disabled: true }),
   ),
+  http.post("*/api/strategies/regenerate", () =>
+    ok({ job_id: "job-regen-12345678" }),
+  ),
 
   // 发现
   http.get("*/api/discover", () => {
@@ -204,7 +207,13 @@ export const handlers = [
   ),
   http.get("*/api/observation/:code/signals", () =>
     ok([
-      { fund_code: "000001", signal_type: "add", date: "2026-07-01", strength: 0.8 },
+      {
+        fund_code: "000001",
+        level: "加仓",
+        date: "2026-07-01",
+        reasons: ["MACD 金叉"],
+        score: 0.8,
+      },
     ]),
   ),
 
@@ -228,6 +237,15 @@ export const handlers = [
       history: [
         { commit: "abc1234567", date: "2026-07-06", message: "init" },
       ],
+    }),
+  ),
+  http.post("*/api/config/rollback/:commit", ({ params }) =>
+    ok({
+      impacts: [
+        { field: "observation_pool", affected_funds: ["000001"] },
+      ],
+      affected_count: 1,
+      rolled_back_to: params.commit,
     }),
   ),
 

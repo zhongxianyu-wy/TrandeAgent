@@ -285,7 +285,7 @@ class TestDailyPipelineFullRun:
         pipeline.feishu.send_card.assert_called()
 
     def test_dry_run_no_push(self):
-        """--dry-run 不推送飞书。"""
+        """--dry-run 跳过 refresh/analyze/push 三个有副作用的步骤。"""
         import pandas as pd
         pipeline = DailyPipeline()
         pipeline.provider = MagicMock()
@@ -303,9 +303,15 @@ class TestDailyPipelineFullRun:
         pipeline.screener.screen.return_value = pd.DataFrame()
         pipeline.signal_engine.calc_signals.return_value = []
 
-        pipeline.run_daily(force=True, dry_run=True)
+        result = pipeline.run_daily(force=True, dry_run=True)
 
+        # dry_run 应跳过 refresh / analyze / push
+        pipeline.provider.refresh_incremental.assert_not_called()
+        pipeline.analyzer.analyze.assert_not_called()
         pipeline.feishu.send_card.assert_not_called()
+        assert result["steps"]["refresh_data"] == "skipped"
+        assert result["steps"]["analyze_reports"] == "skipped"
+        assert result["steps"]["push_feishu"] == "skipped"
 
     @patch("src.scheduler.holiday.is_trading_day", return_value=False)
     def test_non_trading_day_returns_early(self, _mock):
@@ -339,7 +345,7 @@ class TestDailyPipelineFullRun:
         pipeline.screener.screen.return_value = pd.DataFrame()
         pipeline.signal_engine.calc_signals.return_value = []
 
-        result = pipeline.run_daily(force=True, dry_run=True)
+        result = pipeline.run_daily(force=True, dry_run=False)
         assert result["status"] == "partial"
 
 

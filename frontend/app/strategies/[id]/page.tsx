@@ -105,6 +105,18 @@ export default function StrategyDetailPage() {
       toast.error(`停用失败：${e instanceof Error ? e.message : "未知"}`),
   });
 
+  // 重新生成策略（异步任务，返回 job_id）
+  const regenerateM = useMutation({
+    mutationFn: () =>
+      apiPost<{ job_id: string }>(`/api/strategies/regenerate?count=50`),
+    onSuccess: (data) => {
+      toast.success(`已提交重新生成任务（${data.job_id.slice(0, 8)}）`);
+      qc.invalidateQueries({ queryKey: queryKeys.strategies.all });
+    },
+    onError: (e: unknown) =>
+      toast.error(`提交失败：${e instanceof Error ? e.message : "未知"}`),
+  });
+
   const s = detailQ.data;
 
   return (
@@ -244,11 +256,11 @@ export default function StrategyDetailPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() =>
-            toast.info("请在管理台触发策略重新生成任务")
-          }
+          disabled={regenerateM.isPending}
+          onClick={() => regenerateM.mutate()}
         >
-          <RefreshCw className="mr-1 h-3.5 w-3.5" /> 重新生成策略
+          <RefreshCw className="mr-1 h-3.5 w-3.5" />
+          {regenerateM.isPending ? "提交中…" : "重新生成策略"}
         </Button>
       </div>
     </div>

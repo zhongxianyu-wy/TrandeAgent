@@ -253,7 +253,15 @@ class DailyPipeline:
             }
 
     def step_refresh_data(self, ctx: DailyContext) -> None:
-        """步骤 2：增量刷新数据。"""
+        """步骤 2：增量刷新数据（dry_run 时跳过，避免真实网络副作用）。"""
+        if ctx.dry_run:
+            ctx.steps_result["refresh_data"] = {
+                "status": "skipped",
+                "reason": "dry_run",
+            }
+            logger.info("dry-run 模式，跳过数据刷新")
+            return
+
         summary = self.provider.refresh_incremental()
         ctx.steps_result["refresh_data"] = {
             "status": "success",
@@ -332,7 +340,16 @@ class DailyPipeline:
         logger.info("信号计算完成：{} 条", len(signals))
 
     def step_analyze_top_funds(self, ctx: DailyContext) -> None:
-        """步骤 6：对 Top-N 候选生成 LLM 分析报告。"""
+        """步骤 6：对 Top-N 候选生成 LLM 分析报告（dry_run 时跳过，避免真实 LLM 调用）。"""
+        if ctx.dry_run:
+            ctx.steps_result["analyze_reports"] = {
+                "status": "skipped",
+                "reason": "dry_run",
+                "report_count": 0,
+            }
+            logger.info("dry-run 模式，跳过 LLM 分析")
+            return
+
         if not ctx.top_candidates:
             ctx.steps_result["analyze_reports"] = {
                 "status": "success",

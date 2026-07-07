@@ -10,9 +10,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Save, AlertTriangle, GitCommit } from "lucide-react";
+import { Save, AlertTriangle, GitCommit, Undo2 } from "lucide-react";
 import { toast } from "sonner";
-import { apiGet, apiPut } from "@/lib/api";
+import { apiGet, apiPost, apiPut } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import type {
   AppConfig,
@@ -115,6 +115,20 @@ export default function ConfigEditPage() {
     pendingValues.current = values;
     setConfirmOpen(true);
   };
+
+  // 回滚到指定 commit
+  const rollbackM = useMutation({
+    mutationFn: (commit: string) =>
+      apiPost<ConfigUpdateResult>(`/api/config/rollback/${commit}`),
+    onSuccess: (data) => {
+      toast.success(`已回滚，影响 ${data.affected_count} 只基金`);
+      qc.invalidateQueries({ queryKey: queryKeys.config.all });
+    },
+    onError: (e: unknown) =>
+      toast.error(`回滚失败：${e instanceof Error ? e.message : "未知"}`),
+  });
+
+  const [rollbackCommit, setRollbackCommit] = useState<string | null>(null);
 
   const observationPool = form.watch("observation_pool");
 
@@ -257,9 +271,20 @@ export default function ConfigEditPage() {
                         </div>
                         <div className="truncate">{h.message}</div>
                       </div>
-                      <Badge variant="outline" className="shrink-0">
-                        {h.date}
-                      </Badge>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Badge variant="outline">{h.date}</Badge>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-xs"
+                          disabled={rollbackM.isPending}
+                          onClick={() => setRollbackCommit(h.commit)}
+                          title={`回滚到 ${h.commit.slice(0, 8)}`}
+                        >
+                          <Undo2 className="mr-1 h-3 w-3" />
+                          回滚
+                        </Button>
+                      </div>
                     </li>
                   ))}
                 </ol>
@@ -280,6 +305,22 @@ export default function ConfigEditPage() {
           setConfirmOpen(false);
           if (pendingValues.current) {
             await saveM.mutateAsync(pendingValues.current);
+          }
+        }}
+      />
+
+      <ConfirmModal
+        open={rollbackCommit !== null}
+        onOpenChange={(v) => !v && setRollbackCommit(null)}
+        title="确认回滚配置"
+        description={`将回滚到 ${rollbackCommit?.slice(0, 8) ?? ""}，当前未保存的修改会丢失，确定继续？`}
+        confirmText="确认回滚"
+        loading={rollbackM.isPending}
+        onConfirm={async () => {
+          const c = rollbackCommit;
+          setRollbackCommit(null);
+          if (c) {
+            await rollbackM.mutateAsync(c);
           }
         }}
       />

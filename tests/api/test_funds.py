@@ -129,3 +129,79 @@ def test_list_funds_provider_unavailable():
         assert False, "应抛 BusinessError"
     except BusinessError as e:
         assert e.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# P1-1: 超时降级测试
+# ---------------------------------------------------------------------------
+def test_list_funds_timeout_degrades_to_empty():
+    """provider.list_funds 超时 → 降级返回空列表（不抛异常）。"""
+    import time
+
+    def slow_list(*args, **kwargs):
+        time.sleep(5)  # 模拟阻塞
+        return pd.DataFrame()
+
+    provider = MagicMock()
+    provider.list_funds.side_effect = slow_list
+
+    # 用极短超时触发降级
+    import src.api.timeout as t
+
+    orig = t.DEFAULT_TIMEOUT
+    t.DEFAULT_TIMEOUT = 0.2
+    try:
+        result = fund_service.list_funds(provider)
+        assert result.total == 0
+        assert result.items == []
+    finally:
+        t.DEFAULT_TIMEOUT = orig
+
+
+def test_get_nav_timeout_degrades_to_empty():
+    """provider.get_nav 超时 → 降级返回空列表。"""
+    import time
+
+    def slow_nav(*args, **kwargs):
+        time.sleep(5)
+        return pd.DataFrame()
+
+    provider = MagicMock()
+    provider.get_nav.side_effect = slow_nav
+
+    import src.api.timeout as t
+
+    orig = t.DEFAULT_TIMEOUT
+    t.DEFAULT_TIMEOUT = 0.2
+    try:
+        result = fund_service.get_nav(provider, "000001")
+        assert result.total == 0
+    finally:
+        t.DEFAULT_TIMEOUT = orig
+
+
+def test_call_with_timeout_normal():
+    """正常调用应返回结果。"""
+    from src.api.timeout import call_with_timeout
+
+    def add(a, b):
+        return a + b
+
+    assert call_with_timeout(add, 1, 2) == 3
+
+
+def test_call_with_timeout_raises():
+    """超时应抛 TimeoutError。"""
+    import time
+
+    from src.api.timeout import call_with_timeout
+
+    def slow():
+        time.sleep(5)
+        return "done"
+
+    try:
+        call_with_timeout(slow, timeout=0.1)
+        assert False, "应抛 TimeoutError"
+    except TimeoutError:
+        pass

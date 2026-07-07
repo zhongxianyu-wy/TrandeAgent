@@ -170,18 +170,10 @@ export default function ObservationPage() {
                         {latest ? (
                           <Badge
                             variant="outline"
-                            className={signalColorClass(
-                              latest.signal_type,
-                            )}
+                            className={signalColorClass(latest.level)}
                           >
                             <SignalIcon className="mr-1 h-3 w-3" />
-                            {latest.signal_type === "add"
-                              ? "加仓"
-                              : latest.signal_type === "reduce"
-                                ? "减仓"
-                                : latest.signal_type === "stop_loss"
-                                  ? "止损"
-                                  : latest.signal_type}
+                            {latest.level}
                           </Badge>
                         ) : (
                           <span className="text-muted-foreground">—</span>

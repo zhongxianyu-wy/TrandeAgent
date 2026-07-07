@@ -8,6 +8,7 @@ from datetime import date
 from typing import Any, Optional
 
 import pandas as pd
+from loguru import logger
 
 from src.api.schema import (
     BusinessError,
@@ -17,6 +18,7 @@ from src.api.schema import (
     NotFoundError,
     PaginatedData,
 )
+from src.api.timeout import call_with_timeout
 
 
 def _df_to_fund_basic(row: dict) -> FundBasicInfo:
@@ -47,9 +49,13 @@ def list_funds(
     """基金列表（支持大类/搜索过滤 + 分页）。"""
     categories = [category] if category else None
     try:
-        df = provider.list_funds(categories=categories)  # type: ignore[attr-defined]
+        df = call_with_timeout(provider.list_funds, categories=categories)  # type: ignore[attr-defined]
     except AttributeError as exc:
         raise BusinessError("数据提供者不可用") from exc
+    except TimeoutError as exc:
+        # 数据源超时：降级返回空列表，不阻断 API
+        logger.warning("list_funds 超时，降级返回空：{}", exc)
+        df = pd.DataFrame()
 
     if df is None:
         df = pd.DataFrame()
@@ -68,17 +74,22 @@ def list_funds(
     page_df = df.iloc[start:end]
 
     # 评级/近 1 年收益（可选，engine 缺失时留默认）
+    # 只计算当前页（≤size 只），避免全量 calc_batch 遍历数千基金导致超时
     rating_map: dict[str, int] = {}
     ret1y_map: dict[str, float] = {}
-    if engine is not None and "fund_code" in df.columns:
+    if engine is not None and "fund_code" in page_df.columns:
         try:
-            batch = engine.calc_batch(df["fund_code"].astype(str).tolist(), date.today())  # type: ignore[attr-defined]
+            page_codes = page_df["fund_code"].astype(str).tolist()
+            batch = call_with_timeout(
+                engine.calc_batch, page_codes, date.today(), timeout=5.0
+            )  # type: ignore[attr-defined]
             if batch is not None and not batch.empty and "fund_code" in batch.columns:
                 for _, r in batch.iterrows():
                     code = str(r["fund_code"])
                     rating_map[code] = int(r.get("rating", 0) or 0)
                     ret1y_map[code] = float(r.get("return_1y", 0.0) or 0.0)
         except Exception:  # noqa: BLE001
+            # 超时或计算失败：降级返回无评级
             pass
 
     items: list[FundListItem] = []
@@ -102,9 +113,11 @@ def list_funds(
 def get_fund_detail(provider: Any, engine: Any, fund_code: str) -> dict:
     """单基金详情（含 L1-L4 指标）。"""
     try:
-        basic_df = provider.list_funds()  # type: ignore[attr-defined]
+        basic_df = call_with_timeout(provider.list_funds)  # type: ignore[attr-defined]
     except AttributeError as exc:
         raise BusinessError("数据提供者不可用") from exc
+    except TimeoutError as exc:
+        raise BusinessError(f"数据源响应超时：{exc}") from exc
 
     basic_row: Optional[dict] = None
     if basic_df is not None and not basic_df.empty:
@@ -120,7 +133,11 @@ def get_fund_detail(provider: Any, engine: Any, fund_code: str) -> dict:
     indicators = None
     if engine is not None:
         try:
-            indicators = engine.calc_all(fund_code, date.today())  # type: ignore[attr-defined]
+            indicators = call_with_timeout(
+                engine.calc_all, fund_code, date.today(), timeout=10.0
+            )  # type: ignore[attr-defined]
+        except TimeoutError as exc:
+            raise BusinessError(f"指标计算超时：{exc}") from exc
         except Exception as exc:  # noqa: BLE001
             raise BusinessError(f"指标计算失败：{exc}") from exc
 
@@ -141,9 +158,14 @@ def get_nav(
 ) -> PaginatedData:
     """净值序列（分页，默认 250 天/页）。"""
     try:
-        df = provider.get_nav(fund_code, start or date(2000, 1, 1), end or date.today())  # type: ignore[attr-defined]
+        df = call_with_timeout(
+            provider.get_nav, fund_code, start or date(2000, 1, 1), end or date.today()
+        )  # type: ignore[attr-defined]
     except AttributeError as exc:
         raise BusinessError("数据提供者不可用") from exc
+    except TimeoutError as exc:
+        logger.warning("get_nav 超时，降级返回空：{}", exc)
+        df = pd.DataFrame()
 
     if df is None:
         df = pd.DataFrame()
@@ -184,9 +206,12 @@ def get_report(analyzer: Any, fund_code: str) -> dict:
 def get_holdings(provider: Any, fund_code: str) -> list[dict]:
     """持仓明细。"""
     try:
-        df = provider.get_holdings(fund_code)  # type: ignore[attr-defined]
+        df = call_with_timeout(provider.get_holdings, fund_code)  # type: ignore[attr-defined]
     except AttributeError as exc:
         raise BusinessError("数据提供者不可用") from exc
+    except TimeoutError as exc:
+        logger.warning("get_holdings 超时，降级返回空：{}", exc)
+        return []
     if df is None or df.empty:
         return []
     return df.to_dict(orient="records")
@@ -196,7 +221,9 @@ def get_cashflow(provider: Any, fund_code: str, engine: Any = None) -> dict:
     """现金流（份额变动/机构持有）。优先用指标引擎的 L4 现金流。"""
     if engine is not None:
         try:
-            indicators = engine.calc_all(fund_code, date.today())  # type: ignore[attr-defined]
+            indicators = call_with_timeout(
+                engine.calc_all, fund_code, date.today(), timeout=10.0
+            )  # type: ignore[attr-defined]
             l4 = indicators.l4_cashflow
             return {
                 "share_change_yoy": l4.share_change_yoy,
@@ -208,8 +235,11 @@ def get_cashflow(provider: Any, fund_code: str, engine: Any = None) -> dict:
             pass
     # 退化：返回经理表（份额变动无可得数据）
     try:
-        mgr = provider.get_manager(fund_code)  # type: ignore[attr-defined]
+        mgr = call_with_timeout(provider.get_manager, fund_code)  # type: ignore[attr-defined]
     except AttributeError:
+        mgr = None
+    except TimeoutError as exc:
+        logger.warning("get_manager 超时，降级返回空：{}", exc)
         mgr = None
     managers = mgr.to_dict(orient="records") if mgr is not None and not mgr.empty else []
     return {"managers": managers}

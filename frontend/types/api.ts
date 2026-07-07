@@ -252,12 +252,24 @@ export interface ObservationOpResult {
   in_pool: boolean;
 }
 
+/** 信号档位（与后端 src/signal/models.py SignalLevel 对齐，中文） */
+export type SignalLevel = "加仓" | "持有" | "减仓" | "止损";
+
+/**
+ * 信号（与后端 src/signal/models.py Signal 对齐）。
+ *
+ * 后端字段：
+ * - level: 四档之一（加仓/持有/减仓/止损）
+ * - reasons: 触发理由列表（数组，每条含【依据：指标=值】）
+ * - score: 加权综合得分
+ */
 export interface Signal {
   fund_code: string;
-  signal_type: string; // add | reduce | stop_loss
   date?: string;
-  strength?: number;
-  reason?: string;
+  level: SignalLevel;
+  reasons: string[];
+  score: number;
+  signals_detail?: Array<Record<string, unknown>>;
   [key: string]: unknown;
 }
 

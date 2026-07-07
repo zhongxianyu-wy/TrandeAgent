@@ -207,4 +207,41 @@ describe("配置编辑 - 保存", () => {
       );
     });
   });
+
+  it("点击回滚按钮弹出确认框并回滚", async () => {
+    const user = userEvent.setup();
+    renderPage(<ConfigEditPage />);
+    // 等待版本历史加载
+    await waitFor(() => {
+      expect(screen.getByText("回滚")).toBeInTheDocument();
+    });
+    // 点击回滚 → 弹出确认框
+    await user.click(screen.getAllByText("回滚")[0]);
+    await waitFor(() => {
+      expect(screen.getByText("确认回滚")).toBeInTheDocument();
+    });
+    // 确认回滚
+    await user.click(screen.getByText("确认回滚"));
+    await waitFor(() => {
+      expect(toastMock.success).toHaveBeenCalledWith(
+        expect.stringContaining("已回滚"),
+      );
+    });
+  });
+});
+
+describe("策略详情 - 重新生成策略", () => {
+  it("点击重新生成按钮提交任务", async () => {
+    const user = userEvent.setup();
+    renderPage(<StrategyDetailPage />);
+    await waitFor(() => {
+      expect(screen.getByText("重新生成策略")).toBeInTheDocument();
+    });
+    await user.click(screen.getByText("重新生成策略"));
+    await waitFor(() => {
+      expect(toastMock.success).toHaveBeenCalledWith(
+        expect.stringContaining("已提交重新生成任务"),
+      );
+    });
+  });
 });

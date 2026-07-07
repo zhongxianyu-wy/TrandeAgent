@@ -16,6 +16,7 @@ import {
   Trophy,
   Activity,
   AlertCircle,
+  Minus,
 } from "lucide-react";
 import { apiGet } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
@@ -352,7 +353,8 @@ function SignalCard({ pool }: { pool: string[] }) {
   const grouped = (signalsQ.data ?? []).reduce<
     Record<string, Signal[]>
   >((acc, sig) => {
-    const key = (sig.signal_type || "other") as string;
+    // 后端 level 为中文（加仓/持有/减仓/止损）
+    const key = (sig.level || "其他") as string;
     (acc[key] ??= []).push(sig);
     return acc;
   }, {});
@@ -380,31 +382,27 @@ function SignalCard({ pool }: { pool: string[] }) {
           </div>
         ) : (
           <div className="space-y-2">
-            {(["add", "reduce", "stop_loss"] as const).map((type) => {
-              const list = grouped[type] ?? [];
+            {(["加仓", "持有", "减仓", "止损"] as const).map((lv) => {
+              const list = grouped[lv] ?? [];
               if (list.length === 0) return null;
               const Icon =
-                type === "add"
+                lv === "加仓"
                   ? ArrowUpRight
-                  : type === "reduce"
+                  : lv === "减仓"
                     ? ArrowDownRight
-                    : AlertCircle;
+                    : lv === "止损"
+                      ? AlertCircle
+                      : Minus;
               return list.slice(0, 3).map((sig, i) => (
                 <div
-                  key={`${type}-${i}`}
+                  key={`${lv}-${i}`}
                   className="flex items-center justify-between rounded-md border p-2"
                 >
                   <div className="flex items-center gap-2 text-sm">
                     <Icon
-                      className={`h-4 w-4 ${signalColorClass(type)}`}
+                      className={`h-4 w-4 ${signalColorClass(lv)}`}
                     />
-                    <span className="font-medium">
-                      {type === "add"
-                        ? "加仓"
-                        : type === "reduce"
-                          ? "减仓"
-                          : "止损"}
-                    </span>
+                    <span className="font-medium">{lv}</span>
                     <span className="text-muted-foreground">
                       {sig.fund_code}
                     </span>
